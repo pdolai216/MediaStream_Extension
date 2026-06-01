@@ -51,12 +51,28 @@ extractBtn.addEventListener('click', async () => {
       return;
     }
 
+    // `allFrames: true` ব্যবহার করে সমস্ত সাব-ফ্রেম এবং ক্রস-অরিজিন আইফ্রেম স্ক্যান করা হচ্ছে
     chrome.scripting.executeScript(
-      { target: { tabId: tab.id }, function: universalMediaScanner },
+      { target: { tabId: tab.id, allFrames: true }, function: universalMediaScanner },
       (results) => {
         resetBtn();
-        if (results && results[0]?.result) {
-          allLinks = results[0].result;
+        if (results && results.length > 0) {
+          const merged = [];
+          const seen = new Set();
+          
+          // বিভিন্ন ফ্রেম থেকে পাওয়া ফলাফলগুলোকে ডুপ্লিকেট ছাড়া মার্জ করা
+          results.forEach(frameResult => {
+            if (frameResult && Array.isArray(frameResult.result)) {
+              frameResult.result.forEach(item => {
+                if (item && item.url && !seen.has(item.url)) {
+                  seen.add(item.url);
+                  merged.push(item);
+                }
+              });
+            }
+          });
+
+          allLinks = merged;
           toggleDashboard(allLinks.length > 0);
           updateStats();
           renderLinks();
@@ -109,18 +125,40 @@ function renderLinks() {
     card.className = 'link-card';
     card.style.animationDelay = `${Math.min(i * 20, 150)}ms`;
 
-    const displayUrl = link.url.length > 65 ? link.url.substring(0, 62) + '...' : link.url;
-    
+    // টেক্সট ট্রাঙ্কেশন বা সংক্ষিপ্ত রূপ
+    const displayUrl = link.url.length > 50 ? link.url.substring(0, 47) + '...' : link.url;
     let typeLabel = link.type === 'video' ? '📹 Video' : link.type === 'iframe' ? '🔗 iFrame' : link.type === 'image' ? '🖼️ Image' : '🎵 Audio';
 
+    // ১. প্রিভিউ জেনারেশন লজিক
+    let previewHTML = '';
+    if (link.type === 'image') {
+      previewHTML = `<img src="${link.url}" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'icon-placeholder\'>🖼️</span>';" />`;
+    } else if (link.type === 'video') {
+      // ভিডিওর ক্ষেত্রে মাউস হোভার করলে (Play) এবং মাউস সরালে (Pause) হবে
+      previewHTML = `
+        <video src="${link.url}" muted preload="metadata" loop onmouseover="this.play().catch(e=>{})" onmouseout="this.pause()">
+        </video>
+        <span class="icon-placeholder" style="position:absolute; font-size:9px; bottom:2px; right:2px; background:rgba(0,0,0,0.6); padding:1px 3px; border-radius:3px; color:#fff;">▶</span>
+      `;
+    } else if (link.type === 'audio') {
+      previewHTML = `<span class="icon-placeholder">🎵</span>`;
+    } else {
+      previewHTML = `<span class="icon-placeholder">🔗</span>`;
+    }
+
     card.innerHTML = `
-      <div class="card-top">
-        <span class="badge ${link.type}">${typeLabel}</span>
+      <div class="preview-box">
+        ${previewHTML}
       </div>
-      <div class="url-text" title="${link.url}">${displayUrl}</div>
-      <div class="card-actions">
-        <button class="mini-btn copy-single">Copy</button>
-        <button class="mini-btn open-single">Open</button>
+      <div class="card-info">
+        <div class="card-top">
+          <span class="badge ${link.type}">${typeLabel}</span>
+        </div>
+        <div class="url-text" title="${link.url}">${displayUrl}</div>
+        <div class="card-actions">
+          <button class="mini-btn copy-single">Copy</button>
+          <button class="mini-btn open-single">Open</button>
+        </div>
       </div>
     `;
 
@@ -173,8 +211,13 @@ function universalMediaScanner() {
 
   const pushItem = (url, type) => {
     if (!url || url.startsWith('javascript:') || url === 'about:blank' || url.startsWith('data:image')) return;
-    if (url.startsWith('//')) url = window.location.protocol + url;
-    else if (url.startsWith('/')) url = window.location.origin + url;
+    
+    try {
+      // ২. স্ট্যান্ডার্ড URL কনস্ট্রাক্টর ব্যবহার করে রিলেটিভ ইউআরএল অ্যাবসলিউট লিংকে রূপান্তর
+      url = new URL(url, document.baseURI || window.location.href).href;
+    } catch(e) {
+      return;
+    }
     
     if (trackedUrls.has(url)) return;
     trackedUrls.add(url);
@@ -192,12 +235,21 @@ function universalMediaScanner() {
     try { if (f.src) pushItem(f.src, 'iframe'); } catch(e) {}
   });
 
-  // 3. HIGH-RES IMAGES DETECTOR & YOUTUBE THUMBNAILS
+  // 3. IMAGES & BACKGROUND IMAGES & YOUTUBE THUMBNAILS
   document.querySelectorAll('img').forEach(img => {
     let src = img.src || img.getAttribute('data-src') || img.currentSrc;
-    if (src) {
-      pushItem(src, 'image');
-    }
+    if (src) pushItem(src, 'image');
+  });
+
+  // ৩. সিএসএস ব্যাকগ্রাউন্ড ইমেজ সনাক্তকরণ
+  document.querySelectorAll('*').forEach(el => {
+    try {
+      const bg = window.getComputedStyle(el).backgroundImage;
+      if (bg && bg !== 'none' && bg.startsWith('url(')) {
+        const cleanUrl = bg.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+        pushItem(cleanUrl, 'image');
+      }
+    } catch(e) {}
   });
   
   // YouTube Thumbnail Extractor
@@ -213,5 +265,4 @@ function universalMediaScanner() {
   });
 
   return extracted;
-    }
-             
+}             
