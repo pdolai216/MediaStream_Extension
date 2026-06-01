@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #09090e;
+      --surface:      #12121f;
+      --surface2:     #1a1a2e;
+      --accent-glow:  rgba(0, 102, 255, 0.15);
+      --accent:       #0066ff; /* Neon Blue */
+      --accent2:      #9d4edd; /* Cyber Purple */
+      --amber:        #ff9f1c; /* Image Orange */
+      --teal:         #00f5d4; /* Audio Teal */
+      --green:        #00f5a0;
+      --border:       #232338;
+      --text:         #f1f1f6;
+      --muted:        #7e7e9a;
+      --shadow:       0 8px 32px rgba(0, 0, 0, 0.5);
+      --radius:       12px;
+      --radius-sm:    6px;
+      --transition:   .2s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    [data-theme="light"] {
+      --bg:           #f4f5f9;
+      --surface:      #ffffff;
+      --surface2:     #f0f2f8;
+      --accent-glow:  rgba(0, 102, 255, 0.08);
+      --accent:       #0052cc;
+      --accent2:      #7b2cbf;
+      --amber:        #d97706;
+      --teal:         #0d9488;
+      --green:        #00a86b;
+      --border:       #e2e4ed;
+      --text:         #0f0f14;
+      --muted:        #65657b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 440px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .header {
+      padding: 16px 20px;
+      background: rgba(var(--surface), 0.2);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: grid; place-items: center; font-size: 16px; color: #fff;
+    }
+    .logo-text { font-weight: 800; font-size: 14px; letter-spacing: -0.02em; }
+    .logo-text span { display: block; font-size: 9px; color: var(--accent); font-weight: 600; text-transform: uppercase; }
+    
+    .theme-btn {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: grid; place-items: center;
+    }
+
+    .container { padding: 16px; }
+
+    .extract-btn {
+      width: 100%; padding: 12px; border-radius: var(--radius); border: none;
+      font-weight: 700; font-size: 14px; color: #fff;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      cursor: pointer; box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition);
+    }
+    .extract-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0, 102, 255, 0.45); }
+    .extract-btn.loading { pointer-events: none; opacity: 0.7; }
+
+    .controls-wrapper { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .search-box { position: relative; }
+    .search-box input {
+      width: 100%; padding: 8px 12px 8px 32px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: inherit;
+    }
+    .search-box::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; opacity: 0.5; }
+
+    .filter-tabs {
+      display: flex; background: var(--surface2); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border); gap: 2px;
+    }
+    .tab {
+      flex: 1; padding: 6px 0; border: none; background: transparent; color: var(--muted);
+      font-family: inherit; font-weight: 600; font-size: 11px; cursor: pointer; border-radius: 4px; text-align: center;
+    }
+    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); padding: 8px; border-radius: var(--radius-sm); text-align: center;
+    }
+    .stat-card .count { font-size: 16px; font-weight: 800; }
+    .stat-card .label { font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 600; margin-top: 2px; }
+    .stat-card.video .count { color: var(--accent); }
+    .stat-card.iframe .count { color: var(--accent2); }
+    .stat-card.image .count { color: var(--amber); }
+    .stat-card.audio .count { color: var(--teal); }
+
+    .action-row { display: flex; gap: 8px; margin-top: 12px; }
+    .secondary-btn {
+      flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text); font-weight: 600; font-size: 11px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .secondary-btn:hover { background: var(--surface2); }
+    .secondary-btn.success { border-color: var(--green); color: var(--green); }
+
+    .list-container { margin-top: 14px; max-height: 280px; overflow-y: auto; }
+    .list-container::-webkit-scrollbar { width: 4px; }
+    .list-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    .link-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; animation: fadeIn 0.2s ease both;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card-top { display: flex; align-items: center; justify-content: space-between; }
+    .badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .badge.video { background: rgba(0, 102, 255, 0.1); color: var(--accent); }
+    .badge.iframe { background: rgba(157, 78, 221, 0.1); color: var(--accent2); }
+    .badge.image { background: rgba(255, 159, 28, 0.1); color: var(--amber); }
+    .badge.audio { background: rgba(0, 245, 212, 0.1); color: var(--teal); }
+
+    .url-text { font-size: 11px; color: var(--muted); word-break: break-all; user-select: all; }
+    .card-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    
+    .mini-btn {
+      padding: 4px 8px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text); font-size: 10px; font-weight: 600; cursor: pointer;
+    }
+    .mini-btn:hover { background: var(--border); }
+    .mini-btn.copied { background: var(--green); color: #000; border-color: var(--green); }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty-state-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.7; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🔮</div>
+      <div class="logo-text">
+        MediaStream
+        <span>All-In-One Hub</span>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn">🌙</button>
+  </div>
+
+  <div class="container">
+    
+    <button class="extract-btn" id="extractBtn">🚀 Deep Scan Webpage</button>
+
+    <div id="controlsWrapper" class="controls-wrapper hidden">
+      <div class="search-box">
+        <input type="text" id="searchInp" placeholder="Filter by keyword, format, extension..." />
+      </div>
+      <div class="filter-tabs">
+        <button class="tab active" data-filter="all">All</button>
+        <button class="tab" data-filter="video">Video</button>
+        <button class="tab" data-filter="iframe">iFrame</button>
+        <button class="tab" data-filter="image">Images</button>
+        <button class="tab" data-filter="audio">Audio</button>
+      </div>
+    </div>
+
+    <div id="statsGrid" class="stats-grid hidden">
+      <div class="stat-card video"><div class="count" id="videoCount">0</div><div class="label">Video</div></div>
+      <div class="stat-card iframe"><div class="count" id="iframeCount">0</div><div class="label">iFrame</div></div>
+      <div class="stat-card image"><div class="count" id="imageCount">0</div><div class="label">Image</div></div>
+      <div class="stat-card audio"><div class="count" id="audioCount">0</div><div class="label">Audio</div></div>
+    </div>
+
+    <div id="actionRow" class="action-row hidden">
+      <button class="secondary-btn" id="copyAllBtn">📋 Copy Filtered</button>
+      <button class="secondary-btn" id="clearBtn">🗑 Clear</button>
+    </div>
+
+    <div class="list-container" id="listContainer">
+      <div class="empty-state" id="initialState">
+        <div class="empty-state-icon">🛰️</div>
+        <p>Ready to capture streams, images, and audio tracks. Click Scan to parse.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
